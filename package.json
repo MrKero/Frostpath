@@ -1,6 +1,6 @@
 {
   "name": "frostpath",
-  "version": "2.10.0",
+  "version": "2.10.1",
   "description": "Frostpath – Der Weg durch das Eis. Ein Eis-Rutsch-Puzzlespiel im Browser: rutsch über das Eis, bis dich etwas stoppt.",
   "private": true,
   "scripts": {

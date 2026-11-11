@@ -129,7 +129,9 @@ function buildLevels(){const p=curPlace();if(!p){buildPlaces();show('places');re
 function lvPreview(p,i,n){const L=p.levels[i],cv=$('lPv'),st=S.stars[p.id+'-'+i]||0;if(!L){$('lPrev').classList.add('hide');return}$('lPrev').classList.remove('hide');
   drawBoard(cv,L.map.map(r=>r.split('')),{wrap:L.wrap});const sc=Math.min(300/cv.width,190/cv.height);cv.style.width=Math.round(cv.width*sc)+'px';cv.style.height=Math.round(cv.height*sc)+'px';
   $('lPrev').classList.toggle('secret',!!L.secret);$('lPvName').textContent=(L.secret?'✦ ':n+'. ')+lvName(L,p,i);
-  $('lPvInfo').innerHTML=`Par ${L.par||'?'} · <span class="lpst">${'★'.repeat(st)}${'☆'.repeat(3-st)}</span>`;$('lStart').onclick=()=>{snd('ui');playPlace(i)}}
+  const fs=[];if(L.sec){let gk=null;L.sec.forEach((row,r)=>[...row].forEach((v,c)=>{if(v==='J'&&!gk)gk=p.id+'-'+i+'-'+r+','+c}));if(gk&&S.gems[gk])fs.push(`<img class="coin" src="${GEM_URL}" alt=""> ${t('pvGem')}`);
+    if(L.sec.join('').includes('Y')){const si=secretAfter(p.levels,i);if(si>=0&&S.portals[p.id+'-'+si])fs.push('🌀 '+t('pvPortal'))}}
+  $('lPvInfo').innerHTML=`Par ${L.par||'?'} · <span class="lpst">${'★'.repeat(st)}${'☆'.repeat(3-st)}</span>`+(fs.length?`<span class="lpsec">${fs.join(' · ')}</span>`:'');$('lStart').onclick=()=>{snd('ui');playPlace(i)}}
 function lvName(L,p,i){return(L.nm&&(L.nm[LANG]||L.nm.de))||L.name||(p.name+' '+(i+1))}
 function playPlace(i){const p=curPlace();const L=p.levels[i];play(L,{mode:'play',li:i,title:lvName(L,p,i)})}
 // Geheimlevel hinter einem Portal: das nächste als geheim markierte Level nach dem aktuellen
@@ -143,7 +145,7 @@ function play(L,meta){const P=prep(L);let par=meta.mode==='play'?L.par:null;if(p
   G={walk:spk&&solvedLv,prints:[],sec:L.sec||null,hits:{},L,P,meta,par,st:initState(P),hist:[],busy:false,won:false,dead:false,trapped:false,dir:1,auto:null,deaths:0,restarts:0,hints:0,lastHint:null,tok:0,mask:document.createElement('canvas')};
   $('gTitle').textContent=meta.title;$('gPar').textContent=par??'?';$('gMoves').textContent=0;
   $('gWrap').textContent=L.wrap?t('wrapOpen'):'';$('gWrap').style.visibility=L.wrap?'visible':'hidden';$('gBoard').classList.toggle('wrapon',!!L.wrap);
-  $('gUndo').style.display=canUndo()?'':'none';hintLabel();hideDeath();gStats();
+  $('gUndo').style.display=canUndo()?'':'none';hintLabel();hideDeath();gStats();gNextBtn();
   clearFx();if(spk)setTimeout(()=>toast(G&&G.walk?'👟 '+t('spikeOn'):'👟 '+t('spikeOff')),350);$('say').classList.remove('on');$('game').classList.toggle('snowy',!!S.snow);$('game').classList.toggle('secretlv',!!L.secret);mystSparks($('gBoard'),!!L.secret);show('game');requestAnimationFrame(()=>{gFit();gDraw()})}
 // Spike-Spuren: nur die letzten 3 Felder, verblassen langsam
 const PRINT=[0,1,2,3].map(d=>{const c=mk(),x=c.getContext('2d');const dots=[[5,3],[4,5],[6,5],[5,7],[4,9],[6,9],[10,6],[9,8],[11,8],[10,10],[9,12],[11,12]];
@@ -250,6 +252,9 @@ function stopAnim(){G.tok++;clearFx();G.busy=false;G.trapped=false;$('gPl').styl
 function gUndo(){if(!G||!canUndo()||!G.hist.length||G.ghost)return;stopAnim();hideDeath();const h=G.hist.pop();G.st=h.st;G.dir=h.dir;G.dead=false;G.won=false;G.auto=null;closeDlg();gDraw();snd('ui')}
 function gReset(manual){if(!G)return;if(G.ghost){G.ghost=false;endGhostUI()}G.vk=null;if(manual===true&&!G.dead&&!G.trapped&&G.hist.length)G.restarts++;stopAnim();hideDeath();gStats();G.st=initState(G.P);G.hist=[];G.dead=false;G.won=false;G.auto=null;G.dir=1;closeDlg();gDraw()}
 const freeHints=()=>G&&(G.meta.mode==='test'||G.meta.mode==='bau');
+// „Weiter“ während des Spielens, wenn das Level schon einmal geschafft wurde
+function gNextBtn(){const M=G&&G.meta,b=$('gNext');let nx=-1;if(M&&M.mode==='play'){const p=curPlace();if(p&&S.stars[p.id+'-'+M.li]){nx=nextNormal(p,M.li);if(nx>=0&&!lvOpen(p,nx))nx=-1}}
+  b.classList.toggle('hide',nx<0);b.textContent=t('nextLv');b.onclick=()=>{snd('ui');playPlace(nx)}}
 function hintLabel(){$('gHint').innerHTML=freeHints()?t('hint'):`${t('hint')} · ${coin()}${S.tokens}`;$('gHint').classList.toggle('dim',!freeHints()&&S.tokens<=0)}
 function gHint(){if(!G||G.busy||G.won||G.dead||G.trapped||G.ghost)return;if(G.walk){toast('👟 '+t('spikeNoHint'));return}const key=skey(G.st),repeat=G.lastHint===key;
   if(!freeHints()&&!repeat&&S.tokens<=0){say(t('noTokens'));snd('bump');return}
@@ -277,7 +282,7 @@ function gWin(){G.won=true;G.auto=null;snd('win');setPl(G.st.r,G.st.c,.2,0);cons
   if(G.meta.mode==='play'||G.meta.mode==='endless')stat('wins');
   let st=m<=par?3:m<=par+2?2:1;if(G.hints)st=1;const M=G.meta;let bonus='';
   const btns=[{t:t('again'),fn:gReset}];
-  if(M.mode==='play'){const p=curPlace();const k=p.id+'-'+M.li;if(!G.hints)S.clean[k]=1;if(st===3&&(S.stars[k]||0)<3){S.tokens++;bonus=`<div class="bonus">${coin()} ${t('tokenBonus')}</div>`}S.stars[k]=Math.max(S.stars[k]||0,st);persist();
+  if(M.mode==='play'){const p=curPlace();const k=p.id+'-'+M.li;if(!G.hints)S.clean[k]=1;if(st===3&&(S.stars[k]||0)<3){S.tokens++;bonus=`<div class="bonus">${coin()} ${t('tokenBonus')}</div>`}S.stars[k]=Math.max(S.stars[k]||0,st);persist();gNextBtn();
     const nx=nextNormal(p,M.li);btns.push(nx>=0?{t:t('nextLv'),cls:'gold',fn:()=>playPlace(nx)}:{t:t('placeDone'),cls:'gold',fn:gBack})}
   else if(M.mode==='endless'){btns.push({t:'💾 '+t('rndSaveBtn'),keep:true,fn:rndSave});btns.push({t:t('newLv'),cls:'gold',fn:()=>endless(M.n+1)});btns.push({t:'⚙ '+t('rndOptBtn'),fn:rndDlg})}
   else if(M.mode==='test')btns.push({t:t('toEditor'),cls:'gold',fn:gBack});

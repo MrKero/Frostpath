@@ -2,6 +2,10 @@
 
 Alle Versionen von Frostpath (bis 2.8 „Eisrutsche“), neueste zuerst.
 
+## 2.10.1
+
+- „Weiter“-Knopf in bereits geschafften Levels, gefundene Juwelen und Portale in der Levelvorschau
+
 ## 2.10.0
 
 - Zufallslevel mit Item-Auswahl, Schwierigkeit und randlos – gefundene Level speichern; Kanto heißt jetzt Frosthafen
