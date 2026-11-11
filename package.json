@@ -1,0 +1,16 @@
+{
+  "name": "frostpath",
+  "version": "2.10.0",
+  "description": "Frostpath – Der Weg durch das Eis. Ein Eis-Rutsch-Puzzlespiel im Browser: rutsch über das Eis, bis dich etwas stoppt.",
+  "private": true,
+  "scripts": {
+    "build": "node tools/build.js",
+    "build:pages": "node tools/build.js --pwa",
+    "test": "node tests/engine.test.js && node tests/levels.test.js && node tests/secrets.test.js",
+    "changelog": "node tools/changelog.js"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "homepage": "https://mrkero.github.io/Frostpath/"
+}
